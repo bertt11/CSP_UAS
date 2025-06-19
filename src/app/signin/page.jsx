@@ -44,7 +44,7 @@ export default function SignInPage() {
       )}
 
       <div className="flex flex-col gap-2">
-        <label className="text-black font-semibold">Username</label>
+        <label className="text-black font-semibold">test</label>
         <input
           type="text"
           placeholder="Masukkan username"
