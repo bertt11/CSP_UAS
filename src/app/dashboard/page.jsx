@@ -2,8 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
-
+import { db } from "@/lib/firebase";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -17,21 +24,22 @@ export default function DashboardPage() {
   });
   const [editProduct, setEditProduct] = useState(null);
 
-  //mengembalikan URL ke signin jika ingin menembus secara ilegal
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
     if (!savedUser) {
       router.push("/signin");
     } else {
-      const userObj = JSON.parse(savedUser);
-      setUser(userObj);
+      setUser(JSON.parse(savedUser));
       fetchProducts();
     }
   }, []);
 
   const fetchProducts = async () => {
-    const res = await fetch("http://localhost:3001/products");
-    const data = await res.json();
+    const snapshot = await getDocs(collection(db, "products"));
+    const data = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
     setProducts(data);
   };
 
@@ -45,61 +53,48 @@ export default function DashboardPage() {
       return;
     }
 
-    const res = await fetch("http://localhost:3001/products", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const docRef = await addDoc(collection(db, "products"), {
+      nama_produk: newProduct.nama_produk,
+      harga_satuan: Number(newProduct.harga_satuan),
+      quantity: Number(newProduct.quantity),
+    });
+
+    setProducts([
+      ...products,
+      {
+        id: docRef.id,
         ...newProduct,
         harga_satuan: Number(newProduct.harga_satuan),
         quantity: Number(newProduct.quantity),
-      }),
-    });
+      },
+    ]);
 
-    if (res.ok) {
-      const data = await res.json();
-      setProducts([...products, data]);
-      setShowForm(false);
-      setNewProduct({ nama_produk: "", harga_satuan: "", quantity: "" });
-    } else {
-      alert("Gagal menambahkan produk.");
-    }
+    setShowForm(false);
+    setNewProduct({ nama_produk: "", harga_satuan: "", quantity: "" });
   };
 
   const handleDelete = async (id) => {
     const confirm = window.confirm("Yakin ingin menghapus produk ini?");
     if (!confirm) return;
 
-    const res = await fetch(`http://localhost:3001/products/${id}`, {
-      method: "DELETE",
-    });
-
-    if (res.ok) {
-      setProducts(products.filter((p) => p.id !== id));
-    } else {
-      alert("Gagal menghapus produk.");
-    }
+    await deleteDoc(doc(db, "products", id));
+    setProducts(products.filter((p) => p.id !== id));
   };
 
   const handleEditSave = async () => {
-    const res = await fetch(`http://localhost:3001/products/${editProduct.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...editProduct,
-        harga_satuan: Number(editProduct.harga_satuan),
-        quantity: Number(editProduct.quantity),
-      }),
+    const ref = doc(db, "products", editProduct.id);
+    await updateDoc(ref, {
+      nama_produk: editProduct.nama_produk,
+      harga_satuan: Number(editProduct.harga_satuan),
+      quantity: Number(editProduct.quantity),
     });
 
-    if (res.ok) {
-      const updated = await res.json();
-      setProducts(
-        products.map((p) => (p.id === updated.id ? updated : p))
-      );
-      setEditProduct(null);
-    } else {
-      alert("Gagal menyimpan perubahan.");
-    }
+    setProducts(
+      products.map((p) =>
+        p.id === editProduct.id ? { ...editProduct } : p
+      )
+    );
+    setEditProduct(null);
   };
 
   if (!user) return null;

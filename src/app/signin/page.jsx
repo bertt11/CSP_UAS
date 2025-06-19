@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
 export default function SignInPage() {
   const [username, setUsername] = useState("");
@@ -18,20 +20,24 @@ export default function SignInPage() {
     }
 
     try {
-      const res = await fetch(
-        `http://localhost:3001/users?username=${username}&password=${password}`
+      const q = query(
+        collection(db, "users"),
+        where("username", "==", username),
+        where("password", "==", password)
       );
-      const users = await res.json();
 
-      if (users.length > 0) {
-        const user = users[0];
+      const snapshot = await getDocs(q);
+
+      if (!snapshot.empty) {
+        const user = snapshot.docs[0].data();
         localStorage.setItem("user", JSON.stringify(user));
         router.push("/dashboard");
       } else {
         setError("Username atau password salah.");
       }
     } catch (err) {
-      setError("Gagal terhubung ke server.");
+      console.error(err);
+      setError("Gagal terhubung ke Firebase.");
     }
   };
 

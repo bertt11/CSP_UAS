@@ -8,9 +8,9 @@
     "start": "node index.js",
     "json-server": "json-server --watch db.json --port 3001",
     "lint": "next lint"
-    
   },
   "dependencies": {
+    "firebase": "^11.9.1",
     "next": "15.3.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
