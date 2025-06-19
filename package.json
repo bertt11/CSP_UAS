@@ -5,9 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "json-server --watch db.json --port 10000",
     "json-server": "json-server --watch db.json --port 3001",
     "lint": "next lint"
+    
   },
   "dependencies": {
     "next": "15.3.4",
